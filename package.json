@@ -150,6 +150,11 @@
 						},
 						"default": [],
 						"description": "Patterns of workspaces to ignore"
+					},
+					"discord.timeBeforePresenceDisappears": {
+						"type": "number",
+						"default": 0,
+						"description": "Time in seconds VS Code has to be unfocused for the Discord Presence to disappear\n\t- 0 or below will always keep the Discord Presence active as long as VS Code is opened."
 					}
 				}
 			}
