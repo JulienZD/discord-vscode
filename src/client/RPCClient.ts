@@ -80,10 +80,13 @@ export default class RPCClient implements Disposable {
 
 			setTimeout(() => (this.statusBarIcon.text = '$(globe)'), 5000);
 
+			this._clearPresenceOnInactiveWindow();
+
 			if (activityTimer) clearInterval(activityTimer);
 			void this.setActivity(this.config.get<boolean>('workspaceElapsedTime'));
 
 			activityTimer = setInterval(() => {
+				if (!window.state.focused) return;
 				this.config = workspace.getConfiguration('discord');
 				void this.setActivity(this.config.get<boolean>('workspaceElapsedTime'));
 			}, 1000);
@@ -168,5 +171,30 @@ export default class RPCClient implements Disposable {
 		this.statusBarIcon.tooltip = '';
 
 		if (activityTimer) clearInterval(activityTimer);
+	}
+
+	private _clearPresenceOnInactiveWindow() {
+		let clearActivityTimeout: NodeJS.Timeout;
+
+		window.onDidChangeWindowState(() => {
+			const disablePresenceDelay = this.config.get<number>('timeBeforePresenceDisappears')!;
+			if (disablePresenceDelay <= 0) return;
+
+			if (window.state.focused) {
+				Logger.log('Stopped activity clearing timeout.');
+				clearTimeout(clearActivityTimeout);
+			} else {
+				Logger.log(`Clearing activity in ${disablePresenceDelay}s.`);
+				clearActivityTimeout = setTimeout(() => {
+					if (window.state.focused) {
+						clearTimeout(clearActivityTimeout);
+						return;
+					}
+					Logger.log('Clearing activity on Discord.');
+					this.activity.dispose();
+					this.rpc.clearActivity();
+				}, disablePresenceDelay * 1000);
+			}
+		});
 	}
 }
